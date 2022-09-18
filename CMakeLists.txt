@@ -4,10 +4,26 @@
 cmake_minimum_required (VERSION 3.8)
 
 # Name of the solution
-# TODO: Rename solution
-project ("solution-name")
+project ("SAE-GPR5100")
 
 # Include sub-projects.
-# TODO: Rename project
-set(EXECUTABLE_CUSTOM_NAME "project-name")
-add_subdirectory ("project-name")
+include_directories(Common/include/)
+file(GLOB_RECURSE PROJECT_COMMON common/src/*.cpp common/include/*.h)
+
+set(EXECUTABLE_CUSTOM_NAME "DeusMulti-Client")
+add_subdirectory ("DeusMulti-Client")
+
+set(EXECUTABLE_CUSTOM_NAME "DeusMulti-Server")
+add_subdirectory ("DeusMulti-Server")
+
+
+
+
+
+
+
+
+
+
+
+

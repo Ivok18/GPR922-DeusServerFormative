@@ -39,14 +39,14 @@ include_directories(include/)
 file(GLOB_RECURSE PROJECT_SRC src/*.cpp include/*.h)
 
 # TODO: use the line with "win32" in it if you don't want the console
-add_executable(${EXECUTABLE_CUSTOM_NAME} ${PROJECT_SRC})
+add_executable(${EXECUTABLE_CUSTOM_NAME} ${PROJECT_SRC} ${PROJECT_COMMON})
 # add_executable(${EXECUTABLE_CUSTOM_NAME} win32 ${PROJECT_SRC})
 
 # Add data dependencies
 add_dependencies(${EXECUTABLE_CUSTOM_NAME} DataTarget-${EXECUTABLE_CUSTOM_NAME})
 
 # Link libraries
-target_link_libraries(${EXECUTABLE_CUSTOM_NAME} PRIVATE sfml-main sfml-graphics sfml-audio sfml-window sfml-system)
+target_link_libraries(${EXECUTABLE_CUSTOM_NAME} PRIVATE sfml-main sfml-graphics sfml-audio sfml-window sfml-network sfml-system)
 
 if(MSVC)
 target_link_libraries(${EXECUTABLE_CUSTOM_NAME} PRIVATE sfml-main FLAC OpenAL OpenGL Vorbis)

@@ -1,6 +1,5 @@
 {
-  // TODO: Rename project name and remove this comment
-  "name": "project-name",
+  "name": "echoserver",
   "version-string": "0.1.0",
   "dependencies": [
     "sfml",
