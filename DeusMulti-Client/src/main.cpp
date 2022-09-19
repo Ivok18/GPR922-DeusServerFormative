@@ -10,7 +10,7 @@ int main()
    
     bool running = true;
     unsigned short int port = 51000;
-    
+    int i = 0; //counter for player id set
 
     //Player creation
     Player player;
@@ -60,7 +60,7 @@ int main()
     
 
     
-    int i = 0;
+    
 
     while (running)
     {   
@@ -75,134 +75,143 @@ int main()
             //error
         }
 
-        
-        receivePacket >> notifID >> receiveMsg >> hpRemaining >> enemyHpRemaining >> playerID;
-
-        //Set ID once 
+        //Set ID once when receiving the first packet
         if (i == 0)
         {
+            receivePacket >> notifID >> receiveMsg >> hpRemaining >> enemyHpRemaining >> playerID;
             player.SetID(playerID);
             i++;
         }
+        else
+        {
+            receivePacket >> notifID >> receiveMsg >> hpRemaining >> enemyHpRemaining;
+        }
+    
         NotifType notif = static_cast<NotifType>(notifID);
         
-
-        #pragma region SERVER FULL
-        if (notif == NotifType::SERVER_FULL_NOTIF)
-        {
-            running = false;
-        }
-        #pragma endregion
-        #pragma region CONNECTION SUCCESS AND WAIT FOR OPPONENT
-        else if(notif == NotifType::CONNECTION_NOTIF)
-        {
-            std::cout << "waiting for opponent.." << std::endl << std::endl;
-        }
-        #pragma endregion
-        #pragma region  BATTLE OR TURN RESULT(win turn scenario)
-        else if (notif == NotifType::MOVE_CHOICE_NOTIF)
-        {
-            //clear console before move
-            system("cls");
-
-            std::cout << receiveMsg;
-            std::cout << "HP" << hpRemaining << " ("; player.PrintClass(); std::cout << ")";
-            std::cout << '\t' << '\t' << '\t' << '\t' << "ENEMY HP" << enemyHpRemaining << std::endl;
-            std::cout << "(press a)ATTACK" << std::endl;
-            std::cout << "(press d)DEFEND" << std::endl;
-            //std::cout << "(press ga -> attack guess)GUESS OPPONENT MOVE"<< std::endl;
-               
-            std::string moveChoice;  
-            std::getline(std::cin, moveChoice);
-            if (moveChoice != "a" && moveChoice != "d")
+        /*Possible outcome when receiving a packet*/
+            //server full, cannot join
+            if (notif == NotifType::SERVER_FULL_NOTIF)
             {
-                do
+                running = false;
+            }
+
+            //connection success, wait for another player to join
+            else if (notif == NotifType::CONNECTION_NOTIF)
+            {
+                std::cout << "waiting for opponent.." << std::endl << std::endl;
+            }
+
+            //you are
+            //the 1st player to make a move when game starts or
+            //or you won the turn and are being asked to make the first move of next turn
+            else if (notif == NotifType::MOVE_CHOICE_NOTIF)
+            {
+                //clear console before move
+                system("cls");
+
+                std::cout << receiveMsg;
+                std::cout << "HP" << hpRemaining << " ("; player.PrintClass(); std::cout << ")";
+                std::cout << '\t' << '\t' << '\t' << '\t' << "ENEMY HP" << enemyHpRemaining << std::endl;
+                std::cout << "(press a)ATTACK" << std::endl;
+                std::cout << "(press d)DEFEND" << std::endl;
+                //std::cout << "(press ga -> attack guess)GUESS OPPONENT MOVE"<< std::endl;
+
+                std::string moveChoice;
+                std::getline(std::cin, moveChoice);
+                if (moveChoice != "a" && moveChoice != "d")
                 {
-                    std::cout << "retry" << std::endl;
-                    std::cin >> moveChoice;
-                } while (moveChoice != "a" && moveChoice != "d");
-            }
+                    do
+                    {
+                        std::cout << "retry" << std::endl;
+                        std::cin >> moveChoice;
+                    } while (moveChoice != "a" && moveChoice != "d");
+                }
 
-            //convert move choice to int
-            //int moveChoiceInt = std::stoi(moveChoice);             
-         
-            sf::Packet sendPacket;
-            sendPacket << moveChoice << player.GetID();
-            if (socket.send(sendPacket) != sf::Socket::Done)
+                //convert move choice to int
+                //int moveChoiceInt = std::stoi(moveChoice);             
+
+                sf::Packet sendPacket;
+                sendPacket << moveChoice << player.GetID();
+                if (socket.send(sendPacket) != sf::Socket::Done)
+                {
+                    //error
+                }
+
+
+
+
+                //clear console after move
+                system("cls");
+                //std::cout << player.GetID() << std::endl;
+
+                //wait end of turn message
+                std::cout << "wait for turn results.." << std::endl;
+
+            }
+       
+            //you are
+            //the 2nd player to make a move during a turn
+            //and you can guess what was the move of your opponent 
+            //there is one extra option for guessing
+            else if (notif == NotifType::MOVE_CHOICE_GUESS_OPTION_NOTIF)
             {
-                //error
-            }
+                //clear console before move
+                system("cls");
 
-            
-            
+                std::cout << receiveMsg;
+                std::cout << "HP" << hpRemaining << " ("; player.PrintClass(); std::cout << ")";
+                std::cout << '\t' << '\t' << '\t' << '\t' << "ENEMY HP" << enemyHpRemaining << std::endl;
+                std::cout << "(press a)ATTACK" << std::endl;
+                std::cout << "(press d)DEFEND" << std::endl;
+                std::cout << "(press ga -> attack guess | press gd -> defense guess)GUESS OPPONENT MOVE" << std::endl;
+
+                std::string moveChoice;
+                std::getline(std::cin, moveChoice);
+                if (moveChoice != "a" && moveChoice != "d" && moveChoice != "ga" && moveChoice != "gd")
+                {
+                    do
+                    {
+                        std::cout << "retry" << std::endl;
+                        std::cin >> moveChoice;
+                    } while (moveChoice != "a" && moveChoice != "d" && moveChoice != "ga" && moveChoice != "gd");
+                }
+
+
+                sf::Packet sendPacket;
+                sendPacket << moveChoice << player.GetID();
+                if (socket.send(sendPacket) != sf::Socket::Done)
+                {
+                    //error
+                }
+
+
+
+
+                //clear console after move
+                system("cls");
+                //std::cout << player.GetID() << std::endl;
+
+                //wait end of turn message
+                std::cout << "wait for turn results.." << std::endl;
+            }
      
-            //clear console after move
-            system("cls");
-            //std::cout << player.GetID() << std::endl;
-
-            //wait end of turn message
-            std::cout << "wait for turn results.." << std::endl;
-
-        }
-        #pragma endregion
-        #pragma region BATTLE (guess move option)
-        else if (notif == NotifType::MOVE_CHOICE_GUESS_OPTION_NOTIF)
-        {
-            //clear console before move
-            system("cls");
-
-            std::cout << receiveMsg;
-            std::cout << "HP" << hpRemaining << " ("; player.PrintClass(); std::cout << ")";
-            std::cout << '\t' << '\t' << '\t' << '\t' << "ENEMY HP" << enemyHpRemaining << std::endl;
-            std::cout << "(press a)ATTACK" << std::endl;
-            std::cout << "(press d)DEFEND" << std::endl;
-            std::cout << "(press ga -> attack guess | press gd -> defense guess)GUESS OPPONENT MOVE"<< std::endl;
-
-            std::string moveChoice;
-            std::getline(std::cin, moveChoice);
-            if (moveChoice != "a" && moveChoice != "d" && moveChoice != "ga" && moveChoice != "gd")
+            //you lost the turn
+            else if (notif == NotifType::TURN_RESULT_NOTIF)
             {
-                do
-                {
-                    std::cout << "retry" << std::endl;
-                    std::cin >> moveChoice;
-                } while (moveChoice != "a" && moveChoice != "d" && moveChoice != "ga" && moveChoice != "gd");
-            }
+                system("cls");
+                std::cout << receiveMsg << std::endl;
+                std::cout << "HP REMAINING: " << hpRemaining << '\t' << '\t' << '\t' << '\t' << "ENEMY HP" << enemyHpRemaining << std::endl;
+            }   
 
-          
-            sf::Packet sendPacket;
-            sendPacket << moveChoice << player.GetID();
-            if (socket.send(sendPacket) != sf::Socket::Done)
+            //game has ended
+            //you either won 
+            //or lost
+            else if (notif == NotifType::GAME_END_NOTIF)
             {
-                //error
+                system("cls");
+                std::cout << receiveMsg << std::endl;
             }
-
-
-
-
-            //clear console after move
-            system("cls");
-            //std::cout << player.GetID() << std::endl;
-
-            //wait end of turn message
-            std::cout << "wait for turn results.." << std::endl;
-        }
-        #pragma endregion
-        #pragma region TURN RESULT (lose turn scenario)
-        else if (notif == NotifType::TURN_RESULT_NOTIF)
-        {
-            system("cls");
-            std::cout << receiveMsg << std::endl;
-            std::cout << "HP REMAINING: " << hpRemaining << '\t' << '\t' << '\t' << '\t' << "ENEMY HP" << enemyHpRemaining << std::endl;
-        }
-        #pragma endregion
-        #pragma region GAME END
-        else if (notif == NotifType::GAME_END_NOTIF)
-        {
-            system("cls");
-            std::cout << receiveMsg << std::endl;
-        }
-        #pragma endregion
     }
    
     return EXIT_SUCCESS;

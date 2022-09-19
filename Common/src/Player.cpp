@@ -1,7 +1,5 @@
 #include "Player.h"
 
-
-
 Player::Player()
 {
 	name = "Player";
@@ -9,7 +7,6 @@ Player::Player()
 	classsIDreference = 0;
 	hp = 100;
 	move = "ND";
-	opponent = nullptr;
 	id = 0;
 	score = 0;
 	minLuck = 0;
@@ -84,7 +81,7 @@ void Player::PrintData()
 {
 	std::cout << "name: " << name << std::endl;
 	std::cout << "HP: " << hp << std::endl;
-	std::cout << "classs "; PrintClass();
+	std::cout << "classs "; PrintClass(); std::cout << std::endl;
 	std::cout << "move " << move << std::endl;
 	std::cout << "score " << score << std::endl;
 	std::cout << "id " << GetID() << std::endl;
@@ -110,10 +107,7 @@ std::string Player::GetMove()
 {
 	return move;
 }
-Player& Player::GetOpponent()
-{
-	return *opponent.get();
-}
+
 int Player::GetID()
 {
 	return this->id;
@@ -146,19 +140,6 @@ void Player::RiseLuck()
 {
 	minLuck += 60;
 	maxLuck += 60;
-}
-
-Player& Player::operator=(Player& other)
-{
-	name = other.name;
-	classs = other.classs;
-	hp = other.hp;
-
-	return *this;
-}
-bool Player::operator!=(Player& other)
-{
-	return (opponent.get() != other.opponent.get());
 }
 
 

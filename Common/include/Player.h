@@ -17,7 +17,6 @@ private:
 	int score;
 	int minLuck;
 	int maxLuck;
-	std::unique_ptr<Player> opponent;
 
 public:
 	Player();
@@ -38,7 +37,6 @@ public:
 	std::string GetName();
 	float GetHp();
 	std::string GetMove();
-	Player& GetOpponent();
 	int GetID();
 	int GetScore();
 	int GetMinLuck();
@@ -47,11 +45,8 @@ public:
 	int Roll();
 	void RiseLuck();
 
-	Player& operator=(Player& other);
-	bool operator!=(Player& other);
 	friend sf::Packet& operator >>(sf::Packet& packet, Player& player);
 	friend sf::Packet& operator <<(sf::Packet& packet, Player& player);
-	friend void SetOpponent(Player& player, Player& other);
 
 };
 
