@@ -46,7 +46,7 @@ int main()
 
     sf::TcpSocket socket;
     sf::Time timeout = sf::seconds(10.f);
-    sf::Socket::Status status = socket.connect("176.149.56.128", port);
+    sf::Socket::Status status = socket.connect("localhost", port);
     if (status == sf::Socket::Done)
     {
         sf::Packet sendPacket;
