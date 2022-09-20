@@ -47,7 +47,7 @@ int main()
 
     sf::TcpSocket socket;
     sf::Time timeout = sf::seconds(10.f);
-    sf::Socket::Status status = socket.connect("localhost", port);
+    sf::Socket::Status status = socket.connect("176.149.56.128", port);
     if (status == sf::Socket::Done)
     {
         sf::Packet sendPacket;
@@ -115,21 +115,18 @@ int main()
                 std::cout << '\t' << '\t' << '\t' << '\t' << "ENEMY HP" << enemyHpRemaining << std::endl;
                 std::cout << "(press a)ATTACK" << std::endl;
                 std::cout << "(press d)DEFEND" << std::endl;
-                //std::cout << "(press ga -> attack guess)GUESS OPPONENT MOVE"<< std::endl;
+                std::cout << "(press s)SUPER MOVE [max luck >= 40]" << std::endl;
 
                 std::string moveChoice;
                 std::getline(std::cin, moveChoice);
-                if (moveChoice != "a" && moveChoice != "d")
+                if (moveChoice != "a" && moveChoice != "d" && moveChoice != "s")
                 {
                     do
                     {
                         std::cout << "retry" << std::endl;
                         std::cin >> moveChoice;
-                    } while (moveChoice != "a" && moveChoice != "d");
+                    } while (moveChoice != "a" && moveChoice != "d" && moveChoice != "s");
                 }
-
-                //convert move choice to int
-                //int moveChoiceInt = std::stoi(moveChoice);             
 
                 sf::Packet sendPacket;
                 sendPacket << moveChoice << player.GetID();
@@ -143,8 +140,7 @@ int main()
 
                 //clear console after move
                 system("cls");
-                //std::cout << player.GetID() << std::endl;
-
+                
                 //wait end of turn message
                 std::cout << "wait for turn results.." << std::endl;
 
@@ -164,17 +160,19 @@ int main()
                 std::cout << '\t' << '\t' << '\t' << '\t' << "ENEMY HP" << enemyHpRemaining << std::endl;
                 std::cout << "(press a)ATTACK" << std::endl;
                 std::cout << "(press d)DEFEND" << std::endl;
-                std::cout << "(press ga -> attack guess | press gd -> defense guess)GUESS OPPONENT MOVE" << std::endl;
+                std::cout << "(press s)SUPER MOVE [max luck >= 40]" << std::endl;
+                std::cout << "GUESS OPPONENT MOVE" << std::endl;
+                std::cout << "(press ga -> attack guess)\n(press gd -> defense guess)\n(press gs -> super move guess)\n";
 
                 std::string moveChoice;
                 std::getline(std::cin, moveChoice);
-                if (moveChoice != "a" && moveChoice != "d" && moveChoice != "ga" && moveChoice != "gd")
+                if (moveChoice != "a" && moveChoice != "d" && moveChoice != "s" && moveChoice != "ga" && moveChoice != "gd" && moveChoice != "gs")
                 {
                     do
                     {
                         std::cout << "retry" << std::endl;
                         std::cin >> moveChoice;
-                    } while (moveChoice != "a" && moveChoice != "d" && moveChoice != "ga" && moveChoice != "gd");
+                    } while (moveChoice != "a" && moveChoice != "d" && moveChoice != "s" && moveChoice != "ga" && moveChoice != "gd" && moveChoice != "gs");
                 }
 
 

@@ -44,6 +44,7 @@ public:
 
 	int Roll();
 	void RiseLuck();
+	void DepleteLuck();
 
 	friend sf::Packet& operator >>(sf::Packet& packet, Player& player);
 	friend sf::Packet& operator <<(sf::Packet& packet, Player& player);

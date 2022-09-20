@@ -10,7 +10,7 @@ Player::Player()
 	id = 0;
 	score = 0;
 	minLuck = 0;
-	maxLuck = 100;
+	maxLuck = 30;
 	
 }
 
@@ -24,7 +24,7 @@ Player::Player(std::string _name, ClassType _classs, float _hp)
 	id = 0;
 	score = 0;
 	minLuck = 0;
-	maxLuck = 100;
+	maxLuck = 30;
 }
 
 Player::Player(const Player& other)
@@ -93,7 +93,7 @@ void Player::PrintData()
 
 int Player::GetClassIDRef()
 {
-	return classs;
+	return classsIDreference;
 }
 std::string Player::GetName()
 {
@@ -142,4 +142,31 @@ void Player::RiseLuck()
 	maxLuck += 60;
 }
 
+void Player::DepleteLuck()
+{
+	
+	maxLuck -= 40;
+	minLuck -= 40;
+	if (minLuck <= 0)
+	{
+		minLuck = 0;
+	}
+	if (maxLuck <= 0)
+	{
+		maxLuck = 0;
+	}
+	if (minLuck == 0 && maxLuck == 0)
+	{
+		maxLuck = 1;
+	}
 
+	/*
+		if (maxLuck < minLuck && maxLuck > 0)
+		{
+			int tempMinLuck = minLuck;
+			minLuck = maxLuck;
+			maxLuck = tempMinLuck;
+		}
+	*/
+	
+}

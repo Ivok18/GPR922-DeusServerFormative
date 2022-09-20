@@ -128,8 +128,10 @@ void AnalyseCurrTurnDatas(sf::TcpSocket* client, std::vector<sf::TcpSocket*> cli
 	//traitement des données du tour de chaque joueur
 	int scorePlayer = 0;
 	std::string movePlayer;
+	int classsIDrefPlayer = 0;
 	int scoreOpponent = 0;
 	std::string moveOpponent;
+	int  classsIDRefOpponent = 0;
 	int minLuckPlayer = 0;
 	int maxLuckPlayer = 0;
 	int minLuckOpponent = 0;
@@ -142,6 +144,7 @@ void AnalyseCurrTurnDatas(sf::TcpSocket* client, std::vector<sf::TcpSocket*> cli
 		{
 			scorePlayer = player->GetScore();
 			movePlayer = player->GetMove();
+			classsIDrefPlayer = player->GetClassIDRef();
 			minLuckPlayer = player->GetMinLuck();
 			maxLuckPlayer = player->GetMaxLuck();
 		}
@@ -149,6 +152,7 @@ void AnalyseCurrTurnDatas(sf::TcpSocket* client, std::vector<sf::TcpSocket*> cli
 		{
 			scoreOpponent = player->GetScore();
 			moveOpponent = player->GetMove();
+			classsIDRefOpponent = player->GetClassIDRef();
 			minLuckOpponent = player->GetMinLuck();
 			maxLuckOpponent = player->GetMaxLuck();
 		}
@@ -890,6 +894,650 @@ void AnalyseCurrTurnDatas(sf::TcpSocket* client, std::vector<sf::TcpSocket*> cli
 
 		}
 	}
+
+	//p1 and opponent wanna go super move
+	else if (movePlayer == "s" && moveOpponent == "s")
+	{
+		float opponentHp = 0;
+		float playerHp = 0;
+
+		
+		//player and opponent wanted to go super move but did not have enough luck power
+		if (maxLuckPlayer - 40 < 0 && maxLuckOpponent - 40 < 0)
+		{
+			for (auto& player : players)
+			{
+				//find player in player list
+				if (player->GetID() == playerID)
+				{
+					//player lose 40hp
+					playerHp = player->GetHp();
+					playerHp -= 40;
+					player->SetHp(playerHp);
+
+				}
+				else //opponent lose 30hp
+				{
+					opponentHp = player->GetHp();
+					opponentHp -= 40;
+					player->SetHp(opponentHp);
+				}
+			}
+
+			//player higher score
+			if (scorePlayer > scoreOpponent)
+			{
+				if (playerHp <= 0 && opponentHp > 0)
+					RunPlayerLoseGameScenario(client, clients);
+				else if(playerHp <= 0 && opponentHp <= 0)
+					RunPlayerWinGameScenario(client, clients);
+				else
+				{
+					std::string msgToPlayer =
+						"Be aware of yout limits! You did not have enough power but you tried regardles \n.Luck Gods decided to punish your lack of judgment. You lost 40hp\n\n\n";
+					msgToPlayer += "LUCK[" + std::to_string(minLuckPlayer) + "; " + std::to_string(maxLuckPlayer) + "]\n";
+
+					std::string msgToOpponent =
+						"Your greed for power was too offensive for Luck Gods \n they decided to punish you, and you lost 40hp";
+
+					RunPlayerWinTurnScenario(client, clients, msgToPlayer, msgToOpponent, playerHp, opponentHp, minLuckPlayer, maxLuckPlayer);
+				}
+			}
+			
+			//opponent higher score
+			if (scorePlayer < scoreOpponent)
+			{
+				if (playerHp <= 0 && opponentHp > 0)
+					RunPlayerLoseGameScenario(client, clients);
+				else if (playerHp <= 0 && opponentHp <= 0)
+					RunPlayerLoseGameScenario(client, clients);
+				else
+				{
+					std::string msgToOpponent =
+						"Be aware of yout limits! You did not have enough power but you tried regardles \n.Luck Gods decided to punish your lack of judgment. You lost 40hp\n\n\n";
+					msgToOpponent += "LUCK[" + std::to_string(minLuckOpponent) + "; " + std::to_string(maxLuckOpponent) + "]\n";
+
+					std::string msgToPlayer =
+						"Your greed for power was too offensive for Luck Gods \n they decided to punish you, and you lost 40hp";
+
+					RunPlayerLoseTurnScenario(client, clients, msgToPlayer, msgToOpponent, playerHp, opponentHp, minLuckPlayer, maxLuckPlayer);
+				}
+			}
+		}
+
+		//player and opponent try to land their super move, and they both have enough luck power
+		else if (maxLuckPlayer - 40 >= 0 && maxLuckOpponent - 40 >= 0)
+		{
+			if (scorePlayer > scoreOpponent)
+			{
+				for (auto& player : players)
+				{
+					//find player in player list
+					if (player->GetID() == playerID)
+					{
+						playerHp = player->GetHp();
+						player->SetHp(playerHp);
+						player->DepleteLuck();
+						maxLuckPlayer = player->GetMaxLuck();
+						minLuckPlayer = player->GetMinLuck();
+
+					}
+					else //opponent lose 30hp
+					{
+						opponentHp = player->GetHp();
+						opponentHp -= 40;
+						player->DepleteLuck();					
+						player->SetHp(opponentHp);
+						maxLuckOpponent = player->GetMaxLuck();
+						minLuckOpponent = player->GetMinLuck();
+					}
+				}
+
+				if (opponentHp <= 0)
+					RunPlayerWinGameScenario(client, clients);
+
+				else
+				{
+					if (static_cast<ClassType>(classsIDrefPlayer) == ClassType::MAGE)
+					{
+						std::string msgToPlayer =
+							"Consuming your luck power, you invoke a giant fireball that incinerates your opponent!\n\n\n";
+						msgToPlayer+= "LUCK[" + std::to_string(minLuckPlayer) + "; " + std::to_string(maxLuckPlayer) + "]\n";
+
+						std::string msgToOpponent =
+							"Giant fireball incinerates you, but your luck power helps you to escape death";
+
+						RunPlayerWinTurnScenario(client, clients, msgToPlayer, msgToOpponent, playerHp, opponentHp, minLuckPlayer, maxLuckPlayer);
+					}
+					else if(static_cast<ClassType>(classsIDrefPlayer) == ClassType::WARRIOR)
+					{
+						std::string msgToPlayer =
+							"Consuming your luck power, you invoke the greatsword excalibur and you crush your opponent!\n\n\n";
+						msgToPlayer += "LUCK[" + std::to_string(minLuckPlayer) + "; " + std::to_string(maxLuckPlayer) + "]\n";
+
+						std::string msgToOpponent =
+							"The great sword excalibur crushes you, but your luck power helps you to escape death";
+
+						RunPlayerWinTurnScenario(client, clients, msgToPlayer, msgToOpponent, playerHp, opponentHp, minLuckPlayer, maxLuckPlayer);
+					}
+				}
+			}
+			else
+			{
+				for (auto& player : players)
+				{
+					//find player in player list
+					if (player->GetID() == playerID)
+					{
+						playerHp = player->GetHp();
+						playerHp -= 40;
+						player->SetHp(playerHp);
+						player->DepleteLuck();
+						maxLuckPlayer = player->GetMaxLuck();
+						minLuckPlayer = player->GetMinLuck();
+						
+
+					}
+					else
+					{
+						opponentHp = player->GetHp();
+						player->SetHp(opponentHp);
+						player->DepleteLuck();
+						maxLuckOpponent = player->GetMaxLuck();
+						minLuckOpponent = player->GetMinLuck();
+					}
+				}
+
+				if (playerHp <= 0)
+					RunPlayerLoseGameScenario(client, clients);
+
+				else
+				{
+					if (static_cast<ClassType>(classsIDRefOpponent) == ClassType::MAGE)
+					{
+						std::string msgToOpponent =
+							"Consuming your luck power, you invoke a giant fireball that incinerates your opponent!\n\n\n";
+						msgToOpponent += "LUCK[" + std::to_string(minLuckOpponent) + "; " + std::to_string(maxLuckOpponent) + "]\n";
+
+						std::string msgToPlayer =
+							"Giant fireball incinerates you, but your luck power helps you to escape death";
+
+						RunPlayerLoseTurnScenario(client, clients, msgToPlayer, msgToOpponent, playerHp, opponentHp, minLuckOpponent, maxLuckOpponent);
+					}
+					else if (classsIDRefOpponent == ClassType::WARRIOR)
+					{
+						std::string msgToOpponent =
+							"Consuming your luck power, you invoke the greatsword excalibur and you crush your opponent!\n\n\n";
+						msgToOpponent += "LUCK[" + std::to_string(minLuckOpponent) + "; " + std::to_string(maxLuckOpponent) + "]\n";
+
+						std::string msgToPlayer =
+							"The great sword excalibur crushes you, but your luck power helps you to escape death";
+
+						RunPlayerLoseTurnScenario(client, clients, msgToPlayer, msgToOpponent, playerHp, opponentHp, minLuckOpponent, maxLuckOpponent);
+					}
+				}
+			}
+		}
+
+		//player and opponent try to land their super move, but opponent doesnt have enough luck power
+		else if (maxLuckPlayer - 40 >= 0 && maxLuckOpponent - 40 < 0)
+		{
+			for (auto& player : players)
+			{
+				//find player in player list
+				if (player->GetID() == playerID)
+				{
+					playerHp = player->GetHp();
+					player->SetHp(playerHp);
+					player->DepleteLuck();
+					maxLuckPlayer = player->GetMaxLuck();
+					minLuckPlayer = player->GetMinLuck();
+
+				}
+				else //opponent lose 30hp
+				{
+					opponentHp = player->GetHp();
+					opponentHp -= 40;
+					player->SetHp(opponentHp);
+				}
+			}
+
+			if (opponentHp <= 0)
+				RunPlayerWinGameScenario(client, clients);
+
+			else
+			{
+				if (static_cast<ClassType>(classsIDrefPlayer) == ClassType::MAGE)
+				{
+					std::string msgToPlayer =
+						"Consuming your luck power, you invoke a giant fireball that incinerates your opponent!\n\n\n";
+					msgToPlayer += "LUCK[" + std::to_string(minLuckPlayer) + "; " + std::to_string(maxLuckPlayer) + "]\n";
+
+					std::string msgToOpponent =
+						"Giant fireball incinerates you, but your luck power helps you to escape death";
+
+					RunPlayerWinTurnScenario(client, clients, msgToPlayer, msgToOpponent, playerHp, opponentHp, minLuckPlayer, maxLuckPlayer);
+				}
+				else if (static_cast<ClassType>(classsIDrefPlayer) == ClassType::WARRIOR)
+				{
+					std::string msgToPlayer =
+						"Consuming your luck power, you invoke the greatsword excalibur and you crush your opponent!\n\n\n";
+					msgToPlayer += "LUCK[" + std::to_string(minLuckPlayer) + "; " + std::to_string(maxLuckPlayer) + "]\n";
+
+					std::string msgToOpponent =
+						"The great sword excalibur crushes you, but your luck power helps you to escape death";
+
+					RunPlayerWinTurnScenario(client, clients, msgToPlayer, msgToOpponent, playerHp, opponentHp, minLuckPlayer, maxLuckPlayer);
+				}
+			}
+		}
+
+		//player and opponent try to land their super move, but player doesnt have enough luck power
+		else if(maxLuckPlayer - 40 < 0 && maxLuckOpponent - 40 >= 0)
+		{
+			for (auto& player : players)
+			{
+				//find player in player list
+				if (player->GetID() == playerID)
+				{
+					playerHp = player->GetHp();
+					playerHp -= 40;
+					player->SetHp(playerHp);
+
+
+				}
+				else
+				{
+					opponentHp = player->GetHp();
+					player->SetHp(opponentHp);
+					player->DepleteLuck();
+					maxLuckOpponent = player->GetMaxLuck();
+					minLuckOpponent = player->GetMinLuck();
+				}
+			}
+
+			if (playerHp <= 0)
+				RunPlayerLoseGameScenario(client, clients);
+
+			else
+			{
+				if (static_cast<ClassType>(classsIDRefOpponent) == ClassType::MAGE)
+				{
+					std::string msgToOpponent =
+						"Consuming your luck power, you invoke a giant fireball that incinerates your opponent!\n\n\n";
+					msgToOpponent += "LUCK[" + std::to_string(minLuckOpponent) + "; " + std::to_string(maxLuckOpponent) + "]\n";
+
+					std::string msgToPlayer =
+						"Giant fireball incinerates you, but your luck power helps you to escape death";
+
+					RunPlayerLoseTurnScenario(client, clients, msgToPlayer, msgToOpponent, playerHp, opponentHp, minLuckOpponent, maxLuckOpponent);
+				}
+				else if (classsIDRefOpponent == ClassType::WARRIOR)
+				{
+					std::string msgToOpponent =
+						"Consuming your luck power, you invoke the greatsword excalibur and you crush your opponent!\n\n\n";
+					msgToOpponent += "LUCK[" + std::to_string(minLuckOpponent) + "; " + std::to_string(maxLuckOpponent) + "]\n";
+
+					std::string msgToPlayer =
+						"The great sword excalibur crushes you, but your luck power helps you to escape death";
+
+					RunPlayerLoseTurnScenario(client, clients, msgToPlayer, msgToOpponent, playerHp, opponentHp, minLuckOpponent, maxLuckOpponent);
+				}
+			}
+		}
+
+
+	}
+
+	//p1 wanna go super move and opponent guesses super move
+	else if (movePlayer == "s" && moveOpponent == "gs")
+	{
+		float opponentHp = 0;
+		float playerHp = 0;
+
+		for (auto& player : players)
+		{
+			//find player in player list
+			if (player->GetID() == playerID)
+			{
+				//get player datas
+				playerHp = player->GetHp();
+				player->SetHp(playerHp);
+			}
+			else //get opponent data and rise luck
+			{
+				opponentHp = player->GetHp();
+				player->RiseLuck();
+				minLuckOpponent = player->GetMinLuck();
+				maxLuckOpponent = player->GetMaxLuck();
+			}
+		}
+
+		//Player lose turn scenario
+		std::string msgToOpponent =
+			"Your intuition was good, the Luck Gods decided to rise your luck ! \n and you will be the first to make a move next turn\n\n\n";
+		msgToOpponent += "LUCK [ " + std::to_string(minLuckOpponent) + ";" + std::to_string(maxLuckOpponent) + " ]\n";
+
+		std::string msgToPlayer =
+			"Your opponent did evade from your super move, hence his intuition sharpened and his luck rose to new heights.. \n and you will be the last to make a move next turn";
+
+		RunPlayerLoseTurnScenario(client, clients, msgToPlayer, msgToOpponent, playerHp, opponentHp, minLuckOpponent, maxLuckOpponent);
+	}
+
+	//p1 does something different from super move and opponent guesses super move
+	else if (movePlayer != "s" && moveOpponent == "gs")
+	{
+		float opponentHp = 0;
+		int opponentID = 0;
+		float playerHp = 0;
+
+		for (auto& player : players)
+		{
+			//find opponent in player list
+			if (player->GetID() != playerID)
+			{
+				//opponent lose 20hp
+				opponentHp = player->GetHp();
+				opponentHp -= 20;
+				player->SetHp(opponentHp);
+				opponentID = player->GetID();
+
+			}
+			else //get player data
+			{
+				playerHp = player->GetHp();
+			}
+		}
+
+		//Player -> win game scenario
+		if (opponentHp <= 0)
+			RunPlayerWinGameScenario(client, clients);
+
+		//Player -> win turn scenario
+		else
+		{
+			std::string msgToOpponent =
+				"bad intentions leads to bad intuitions, Luck Gods are discontent, you lost 20 hp \n and you will be the last player to make a move next turn";
+
+			std::string msgToPlayer =
+				"Your opponent toyed with Luck Gods and lost! \n and you will be the first to make a move next turn\n\n\n";
+			msgToPlayer += "LUCK [ " + std::to_string(minLuckPlayer) + ";" + std::to_string(maxLuckPlayer) + " ]\n";
+
+			RunPlayerWinTurnScenario(client, clients, msgToPlayer, msgToOpponent, playerHp, opponentHp, minLuckPlayer, maxLuckPlayer);
+
+		}
+	}
+
+	//p1 guesses super move and opponent does something different from super move
+	else if (movePlayer == "gs" && moveOpponent != "s")
+	{
+		float opponentHp = 0;
+		float playerHp = 0;
+
+		for (auto& player : players)
+		{
+			//find player in player list
+			if (player->GetID() == playerID)
+			{
+				//player lose 20hp
+				playerHp = player->GetHp();
+				playerHp -= 20;
+				player->SetHp(playerHp);
+
+			}
+			else //get opponent data
+			{
+				opponentHp = player->GetHp();
+			}
+		}
+
+		//Player -> lose game scenario
+		if (playerHp <= 0)
+			RunPlayerLoseGameScenario(client, clients);
+
+		else
+		{
+
+			std::string msgToOpponent =
+				"Your opponent toyed with Luck Gods and lost! \n and you will be the first to make a move next turn\n\n\n";
+			msgToOpponent += "LUCK [ " + std::to_string(minLuckOpponent) + ";" + std::to_string(maxLuckOpponent) + " ]\n";
+
+			std::string msgToPlayer =
+				"bad intentions leads to bad intuitions, Luck Gods are discontent, you lost 20 hp \n and you will be the last player to make a move next turn";
+
+			RunPlayerLoseTurnScenario(client, clients, msgToPlayer, msgToOpponent, playerHp, opponentHp, minLuckOpponent, maxLuckOpponent);
+
+		}
+	}
+
+	//p1 guesses super move and opponent wanna go super move
+	else if (movePlayer == "gs" && moveOpponent == "s")
+	{
+		float opponentHp = 0;
+		float playerHp = 0;
+
+		for (auto& player : players)
+		{
+			//find opponent in player list
+			if (player->GetID() != playerID)
+			{
+				//opponent get opponent datas
+				opponentHp = player->GetHp();
+				player->SetHp(opponentHp);
+			}
+			else //get player data and rise luck
+			{
+				playerHp = player->GetHp();
+				player->RiseLuck();
+				minLuckPlayer = player->GetMinLuck();
+				maxLuckPlayer = player->GetMaxLuck();
+			}
+		}
+
+		std::string msgToOpponent =
+			"Your opponent did evade from your super move, hence his intuition sharpened and his luck rose to new heights.. \n and you will be the last to make a move next turn";
+
+		std::string msgToPlayer =
+			"Your intuition was good, the Luck Gods decided to rise your luck ! \n and you will be the first to make a move next turn\n\n\n";
+		msgToPlayer += "LUCK [ " + std::to_string(minLuckPlayer) + ";" + std::to_string(maxLuckPlayer) + " ]\n";
+
+
+		RunPlayerWinTurnScenario(client, clients, msgToPlayer, msgToOpponent, playerHp, opponentHp, minLuckPlayer, maxLuckPlayer);
+	}
+
+	//p1 wanna go super move and opponent does something else
+	else if (movePlayer == "s" && moveOpponent != "s" && moveOpponent != "gs")
+	{
+		float opponentHp = 0;
+		float playerHp = 0;
+
+		//lands super move if enough luck power
+		if (maxLuckPlayer - 40 >= 0)
+		{
+			for (auto& player : players)
+			{
+				//find player in player list
+				if (player->GetID() == playerID)
+				{
+					playerHp = player->GetHp();
+					player->SetHp(playerHp);
+					player->DepleteLuck();
+					maxLuckPlayer = player->GetMaxLuck();
+					minLuckPlayer = player->GetMinLuck();
+
+				}
+				else //opponent lose 30hp
+				{
+					opponentHp = player->GetHp();
+					opponentHp -= 40;
+					player->SetHp(opponentHp);
+				}
+			}
+
+			if (opponentHp <= 0)
+				RunPlayerWinGameScenario(client, clients);
+
+			else
+			{
+				if (static_cast<ClassType>(classsIDrefPlayer) == ClassType::MAGE)
+				{
+					std::string msgToPlayer =
+						"Consuming your luck power, you invoke a giant fireball that incinerates your opponent!\n\n\n";
+					msgToPlayer += "LUCK[" + std::to_string(minLuckPlayer) + "; " + std::to_string(maxLuckPlayer) + "]\n";
+
+					std::string msgToOpponent =
+						"Giant fireball incinerates you, but your luck power helps you to escape death";
+
+					RunPlayerWinTurnScenario(client, clients, msgToPlayer, msgToOpponent, playerHp, opponentHp, minLuckPlayer, maxLuckPlayer);
+				}
+				else if (static_cast<ClassType>(classsIDrefPlayer) == ClassType::WARRIOR)
+				{
+					std::string msgToPlayer =
+						"Consuming your luck power, you invoke the greatsword excalibur and you crush your opponent!\n\n\n";
+					msgToPlayer += "LUCK[" + std::to_string(minLuckPlayer) + "; " + std::to_string(maxLuckPlayer) + "]\n";
+
+					std::string msgToOpponent =
+						"The great sword excalibur crushes you, but your luck power helps you to escape death";
+
+					RunPlayerWinTurnScenario(client, clients, msgToPlayer, msgToOpponent, playerHp, opponentHp, minLuckPlayer, maxLuckPlayer);
+				}
+			}
+		}
+
+		//lose life -> not enough luck power
+		else if(maxLuckPlayer - 40 < 0)
+		{
+			for (auto& player : players)
+			{
+				//find player in player list
+				if (player->GetID() == playerID)
+				{
+					playerHp = player->GetHp();
+					playerHp -= 40;
+					player->SetHp(playerHp);
+				}
+				else
+				{
+					opponentHp = player->GetHp();
+					player->SetHp(opponentHp);
+				}
+			}
+
+			if (playerHp <= 0)
+				RunPlayerLoseGameScenario(client, clients);
+
+			else
+			{		
+				std::string msgToOpponent =
+					"Your opponent toyed with Luck Gods and lost! \n and you will be the first to make a move next turn\n\n\n";
+				msgToOpponent += "LUCK [ " + std::to_string(minLuckOpponent) + ";" + std::to_string(maxLuckOpponent) + " ]\n";
+
+				std::string msgToPlayer =
+					"Your greed for power was too offensive for Luck Gods \n they decided to punish you, and you lost 40hp";
+
+				RunPlayerLoseTurnScenario(client, clients, msgToPlayer, msgToOpponent, playerHp, opponentHp, minLuckOpponent, maxLuckOpponent);
+			}
+		}
+	}
+
+	//p1 does something else and opponent wanna go super move
+	else if (movePlayer != "s" && movePlayer != "gs" && moveOpponent == "s")
+	{
+		float opponentHp = 0;
+		float playerHp = 0;
+
+		//lands super move if enough luck power
+		if (maxLuckOpponent - 40 >= 0)
+		{
+			for (auto& player : players)
+			{
+				//find player in player list
+				if (player->GetID() == playerID)
+				{
+					playerHp = player->GetHp();
+					playerHp -= 40;
+					player->SetHp(playerHp);
+
+
+				}
+				else
+				{
+					opponentHp = player->GetHp();
+					player->SetHp(opponentHp);
+					player->DepleteLuck();
+					maxLuckOpponent = player->GetMaxLuck();
+					minLuckOpponent = player->GetMinLuck();
+				}
+			}
+
+			if (playerHp <= 0)
+				RunPlayerLoseGameScenario(client, clients);
+
+			else
+			{
+				if (static_cast<ClassType>(classsIDRefOpponent) == ClassType::MAGE)
+				{
+					std::string msgToOpponent =
+						"Consuming your luck power, you invoke a giant fireball that incinerates your opponent!\n\n\n";
+					msgToOpponent += "LUCK[" + std::to_string(minLuckOpponent) + "; " + std::to_string(maxLuckOpponent) + "]\n";
+
+					std::string msgToPlayer =
+						"Giant fireball incinerates you, but your luck power helps you to escape death";
+
+					RunPlayerLoseTurnScenario(client, clients, msgToPlayer, msgToOpponent, playerHp, opponentHp, minLuckOpponent, maxLuckOpponent);
+				}
+				else if (classsIDRefOpponent == ClassType::WARRIOR)
+				{
+					std::string msgToOpponent =
+						"Consuming your luck power, you invoke the greatsword excalibur and you crush your opponent!\n\n\n";
+					msgToOpponent += "LUCK[" + std::to_string(minLuckOpponent) + "; " + std::to_string(maxLuckOpponent) + "]\n";
+
+					std::string msgToPlayer =
+						"The great sword excalibur crushes you, but your luck power helps you to escape death";
+
+					RunPlayerLoseTurnScenario(client, clients, msgToPlayer, msgToOpponent, playerHp, opponentHp, minLuckOpponent, maxLuckOpponent);
+				}
+			}
+		}
+
+		//opponent lose life -> not enough luck power
+		else if (maxLuckOpponent - 40 < 0)
+		{
+			for (auto& player : players)
+			{
+				//find player in player list
+				if (player->GetID() == playerID)
+				{
+					//player lose 40hp
+					playerHp = player->GetHp();
+					player->SetHp(playerHp);
+
+				}
+				else //opponent lose 30hp
+				{
+					opponentHp = player->GetHp();
+					opponentHp -= 40;
+					player->SetHp(opponentHp);
+				}
+			}
+
+			if (opponentHp <= 0)
+				RunPlayerWinGameScenario(client, clients);
+
+			else
+			{
+				std::string msgToPlayer =
+					"Your opponent toyed with Luck Gods and lost! \n and you will be the first to make a move next turn\n\n\n";
+				msgToPlayer += "LUCK [ " + std::to_string(minLuckPlayer) + ";" + std::to_string(maxLuckPlayer) + " ]\n";
+
+				std::string msgToOpponent=
+					"Your greed for power was too offensive for Luck Gods \n they decided to punish you, and you lost 40hp";
+
+				RunPlayerWinTurnScenario(client, clients, msgToPlayer, msgToOpponent, playerHp, opponentHp, minLuckOpponent, maxLuckOpponent);
+			}
+				
+		}
+	}
 }
 
 void ProgressWithTurnAndInformOtherUserOfOpponentMove(sf::TcpSocket* client, std::vector<sf::TcpSocket*> clients, std::vector<std::unique_ptr<Player>>& players,int& playerID)
@@ -897,6 +1545,8 @@ void ProgressWithTurnAndInformOtherUserOfOpponentMove(sf::TcpSocket* client, std
 	float hpOpponent = 0;
 	int minLuckOpponent = 0;
 	int maxLuckOpponent = 0;
+	int minLuckPlayer = 0;
+	int maxLuckPlayer = 0;
 	float hpPlayerr = 0;
 	int scorePlayer = 0;
 	std::string movePlayer;
@@ -908,6 +1558,8 @@ void ProgressWithTurnAndInformOtherUserOfOpponentMove(sf::TcpSocket* client, std
 			hpPlayerr = player->GetHp();
 			scorePlayer = player->GetScore();
 			movePlayer = player->GetMove();
+			minLuckPlayer = player->GetMinLuck();
+			maxLuckPlayer = player->GetMaxLuck();
 		}
 		else
 		{
@@ -923,8 +1575,9 @@ void ProgressWithTurnAndInformOtherUserOfOpponentMove(sf::TcpSocket* client, std
 		{
 			sf::Packet sendPacket;
 			std::string sendMsg =
-				"\nOpponent roll score: " + std::to_string(scorePlayer)
-				+ "\n\nLUCK [ " + std::to_string(minLuckOpponent) + ";" + std::to_string(maxLuckOpponent) + " ]\n";
+				"\nOpponent -LUCK- before turn: [ " + std::to_string(minLuckPlayer) + ";" + std::to_string(maxLuckPlayer) + " ]"
+				+"\nOpponent roll score: " + std::to_string(scorePlayer)
+				+ "\n\n\nLUCK [ " + std::to_string(minLuckOpponent) + ";" + std::to_string(maxLuckOpponent) + " ]\n";
 
 			Notif notif(NotifType::MOVE_CHOICE_GUESS_OPTION_NOTIF);
 			sendPacket << notif.GetID() << sendMsg << hpOpponent << hpPlayerr;
@@ -1006,7 +1659,7 @@ int main()
 						std::cout << "new player!" << std::endl;
 
 						//reserve location for packet
-						players.push_back(std::make_unique<Player>(Player::Player()));
+						players.push_back(std::make_unique<Player>());
 						
 						
 						sf::Packet receivePacket;
@@ -1016,7 +1669,7 @@ int main()
 						}
 
 						//store player data in reserved location
-						receivePacket >> *players[0].get();
+						receivePacket >> *players[0];
 						
 						//give ID to new player
 						int sizeList = players.size();
@@ -1049,7 +1702,7 @@ int main()
 						std::cout << "new player!" << std::endl;
 
 						//reserve location for packet
-						players.push_back(std::make_unique<Player>(Player::Player()));
+						players.push_back(std::make_unique<Player>());
 
 						//store player data 
 						sf::Packet receivePacket;
@@ -1059,7 +1712,7 @@ int main()
 						}
 
 						//store player data in reserved location
-						receivePacket >> *players[1].get();
+						receivePacket >> *players[1];
 
 						//give ID to new player
 						int sizeList = players.size();
